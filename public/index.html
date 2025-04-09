@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Tracker</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { border: 2px solid black; padding: 10px; max-width: 1000px; margin: auto; }
+    .top-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .logo { border: 2px solid black; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; }
+    .input-box { border: 2px solid black; padding: 5px; min-width: 120px; }
+    .btn { padding: 5px 10px; cursor: pointer; }
+    .achat { border: 2px solid green; }
+    .vente { border: 2px solid red; }
+    .selected { font-weight: bold; }
+    .history { border: 2px solid black; margin-top: 20px; height: 300px; overflow-y: scroll; padding: 10px; }
+    .transaction-line { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div class="logo">Logo</div>
+      <div class="input-box"><input type="text" id="transaction" placeholder="Adresse transaction"></div>
+      <button id="achat" class="btn achat">ACHAT</button>
+      <button id="vente" class="btn vente">VENTE</button>
+      <div class="input-box"><input type="date" id="date"></div>
+      <div class="input-box"><input type="text" id="crypto" placeholder="Crypto"></div>
+      <div class="input-box"><input type="number" id="montant" placeholder="Montant"></div>
+      <div class="input-box"><input type="number" id="prix" placeholder="Prix du marché"></div>
+      <button id="confirmer" class="btn">confirmer</button>
+      <div id="g_id_onload"
+           data-client_id="VOTRE_CLIENT_ID_GOOGLE"
+           data-context="signin"
+           data-ux_mode="popup"
+           data-callback="handleCredentialResponse"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin" data-type="standard"></div>
+    </div>
+
+    <div id="history" class="history"></div>
+  </div>
+
+  <script>
+    let typeTransaction = "";
+
+    document.getElementById("achat").addEventListener("click", () => {
+      typeTransaction = "Achat";
+      document.getElementById("achat").classList.add("selected");
+      document.getElementById("vente").classList.remove("selected");
+    });
+
+    document.getElementById("vente").addEventListener("click", () => {
+      typeTransaction = "Vente";
+      document.getElementById("vente").classList.add("selected");
+      document.getElementById("achat").classList.remove("selected");
+    });
+
+    document.getElementById("confirmer").addEventListener("click", async () => {
+      const adresse = document.getElementById("transaction").value;
+      const date = document.getElementById("date").value;
+      const crypto = document.getElementById("crypto").value;
+      const montant = document.getElementById("montant").value;
+      const prix = document.getElementById("prix").value;
+
+      if (!adresse || !typeTransaction || !date || !crypto || !montant || !prix) {
+        alert("Merci de remplir tous les champs et de choisir Achat ou Vente.");
+        return;
+      }
+
+      const data = {
+        adresse,
+        type: typeTransaction,
+        date,
+        crypto,
+        montant: parseFloat(montant),
+        prix: parseFloat(prix)
+      };
+
+      await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const line = `<div class="transaction-line">${adresse} <strong style="color:${typeTransaction === 'Achat' ? 'green' : 'red'}">${typeTransaction}</strong> ${date} ${crypto.toUpperCase()} ${montant} ${parseFloat(prix).toLocaleString()}€</div>`;
+      document.getElementById("history").innerHTML += line;
+    });
+
+    function handleCredentialResponse(response) {
+      console.log("Utilisateur connecté:", response);
+    }
+  </script>
+</body>
+</html>
